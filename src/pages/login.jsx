@@ -1,10 +1,46 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Col, Button, Row, Container, Card, Form } from "react-bootstrap";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import Axios from "axios";
 
 //https://frontendshape.com/post/react-bootstrap-5-login-form-example
 
 export default function Login() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const loggedInUser = localStorage.getItem("user");
+    if (loggedInUser) {
+      navigate("/home");
+    }
+  }, []);
+
+  const [passwordRef, setPassword] = useState();
+  const [emailRef, setEmail] = useState();
+
+  const submitHandler = async (e) => {
+    e.preventDefault();
+    Axios.get("http://localhost:5000/account", {
+      params: {
+        params: { email: emailRef, password: passwordRef }
+      },
+    })
+      .then(function (res) {
+        setUser({
+          auth: res.data["authtoken"],
+        });
+        localStorage.setItem(
+          "user",
+          JSON.stringify({
+            auth: res.data["authtoken"],
+          })
+        );
+      })
+      .catch(function (error) {
+        // error response flow
+      });
+  };
+
   return (
     <div>
       <Container>
@@ -20,7 +56,7 @@ export default function Login() {
                     Please enter your email and password!
                   </p>
                   <div className="mb-3">
-                    <Form>
+                    <Form onSubmit={submitHandler}>
                       <Form.Group
                         className="mb-3 text-white"
                         controlId="formBasicEmail"
@@ -28,7 +64,11 @@ export default function Login() {
                         <Form.Label className="text-center">
                           Email address
                         </Form.Label>
-                        <Form.Control type="email" placeholder="Enter email" />
+                        <Form.Control
+                          onChange={(e) => setEmail(e.target.value)}
+                          type="email"
+                          placeholder="Enter email"
+                        />
                       </Form.Group>
 
                       <Form.Group
@@ -36,7 +76,11 @@ export default function Login() {
                         controlId="formBasicPassword"
                       >
                         <Form.Label>Password</Form.Label>
-                        <Form.Control type="password" placeholder="Password" />
+                        <Form.Control
+                          onChange={(e) => setPassword(e.target.value)}
+                          type="password"
+                          placeholder="Password"
+                        />
                       </Form.Group>
                       <Form.Group
                         className="mb-3"

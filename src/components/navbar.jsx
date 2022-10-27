@@ -8,7 +8,6 @@ export default function Navbar() {
   const [user, setUser] = useState()
   const location = useLocation();
 
-  
   useEffect(() => {
     const loggedInUser = localStorage.getItem("user");
     if (loggedInUser) {

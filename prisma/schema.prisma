@@ -11,7 +11,6 @@ model users {
   uid       String    @id @unique(map: "uid") @db.VarChar(1000)
   name      String    @unique(map: "name") @db.VarChar(1000)
   email     String    @unique(map: "email") @db.VarChar(1000)
-  authtoken String    @unique(map: "authtoken") @db.VarChar(1000)
   password  String    @db.VarChar(1000)
   createdat DateTime? @default(now()) @db.Timestamp(0)
 }

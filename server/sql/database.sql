@@ -25,13 +25,11 @@ CREATE TABLE IF NOT EXISTS `custom`.`users` (
   `uid` varchar(1000) NOT NULL,
   `name` varchar(1000) NOT NULL,
   `email` varchar(1000) NOT NULL,
-  `authtoken` varchar(1000) NOT NULL,
   `password` varchar(1000) NOT NULL,
   `createdat` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (`uid`),
   UNIQUE (`name`),
   UNIQUE (`email`),
-  UNIQUE (`authtoken`),
   PRIMARY KEY (`uid`))
 ENGINE = InnoDB;
 

@@ -5,7 +5,7 @@ import express from "express";
 import { PrismaClient } from "@prisma/client";
 import { v4 as uuidv4 } from "uuid";
 import jwt from "jsonwebtoken";
-import { genSalt, hash } from "bcrypt";
+import { genSalt, hash, compare } from "bcrypt";
 import cors from "cors";
 
 config({ path: join(dirname(fileURLToPath(import.meta.url)), "/.env") });
@@ -14,6 +14,19 @@ const prisma = new PrismaClient();
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const generateToken = (uid) =>
+  new Promise((res, rej) => {
+    if (
+      prisma.users.count({
+        where: {
+          uid: uid,
+        },
+      }) === 0
+    )
+      return rej(new Error("Invalid token"));
+    res(jwt.sign(uid, process.env.JWT_SECRET_KEY));
+  });
 
 app.get("/users", async (req, res) => {
   const posts = await prisma.users.findMany();
@@ -50,8 +63,6 @@ app.post("/account", async (req, res) => {
     uid = uuidv4();
   }
 
-  const authtoken = jwt.sign(uid, process.env.JWT_SECRET_KEY);
-
   const salt = await genSalt(10);
   password = await hash(password, salt);
 
@@ -61,22 +72,24 @@ app.post("/account", async (req, res) => {
       name,
       email,
       password,
-      authtoken,
     },
   });
+  const authtoken = await generateToken(uid);
   res
     .status(200)
     .json({ message: "Account creation succeded!", authtoken: authtoken });
 });
 
-app.get("/account", async (req, res) => {
-  const body = req.body;
+app.get("/account/:params", async (req, res) => {
+  const body = req.params;
+  console.log("Body:" + body);
   const user = await prisma.users.findMany({ email: body.email });
   if (user) {
     // check user password with hashed password stored in the database
-    const validPassword = await bcrypt.compare(body.password, user.password);
+    const validPassword = await compare(body.password, user[0].password);
+    const authtoken = await generateToken(user[0].uid);
     if (validPassword) {
-      res.status(200).json({ message: "Valid password" });
+      res.status(200).json({ message: "Valid password", authtoken: authtoken});
     } else {
       res.status(400).json({ error: "Invalid Password" });
     }

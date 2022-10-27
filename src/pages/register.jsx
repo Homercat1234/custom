@@ -14,7 +14,6 @@ export default function Register() {
 
   useEffect(() => {
     const loggedInUser = localStorage.getItem("user");
-    console.log(localStorage.getItem("user"));
     if (loggedInUser) {
       const foundUser = JSON.parse(loggedInUser);
       setUser(foundUser);
@@ -27,7 +26,6 @@ export default function Register() {
 
   const submitHandler = async (e) => {
     e.preventDefault();
-    console.log(usernameRef);
     Axios.post("http://localhost:5000/account", {
       name: usernameRef,
       password: passwordRef,
@@ -36,10 +34,13 @@ export default function Register() {
       .then(function (res) {
         setUser({
           auth: res.data["authtoken"],
-          username: usernameRef,
-          email: emailRef,
         });
-        localStorage.setItem("user", JSON.stringify({user}));
+        localStorage.setItem(
+          "user",
+          JSON.stringify({
+            auth: res.data["authtoken"],
+          })
+        );
       })
       .catch(function (error) {
         // error response flow
