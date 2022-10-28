@@ -1,32 +1,44 @@
-import React, {useState, useEffect} from "react";
-import { Link, useLocation  } from "react-router-dom";
+import React, { useState, useEffect, useCallback } from "react";
+import { Link, useLocation } from "react-router-dom";
 import Nav from "react-bootstrap/Nav";
 import Navb from "react-bootstrap/Navbar";
+import Cookies from "universal-cookie";
+import Axios from "axios";
 
 export default function Navbar() {
-
-  const [user, setUser] = useState()
+  const [user, setUser] = useState();
   const location = useLocation();
 
-  useEffect(() => {
-    const loggedInUser = localStorage.getItem("user");
-    if (loggedInUser) {
-      const foundUser = JSON.parse(loggedInUser);
-      setUser(foundUser);
+  const getVerification = useCallback(async () => {
+    const cookies = new Cookies();
+    let data;
+    cookies.get("user");
+    if (cookies) {
+      Axios.post("http://localhost:5000/account/token", {
+        authtoken: cookies["cookies"]["user"],
+      }).then(function (result) {
+        setUser(result.data);
+      });
+    } else {
+      setUser(null);
     }
   }, [location, user]);
 
+  useEffect(() => {
+    getVerification();
+  }, [getVerification]);
+
   const handleLogout = () => {
-    setUser(null);;
+    setUser(null);
     localStorage.clear();
   };
 
   return (
     <Navb className="px-3 sticky-top" bg="dark" variant="dark" expand="lg">
-        <Navb.Brand as={Link} to="/">
-          Custom
-        </Navb.Brand>
-        <Navb.Toggle />
+      <Navb.Brand as={Link} to="/">
+        Custom
+      </Navb.Brand>
+      <Navb.Toggle />
       <Navb.Collapse>
         <Nav>
           <Nav.Item>
@@ -41,11 +53,17 @@ export default function Navbar() {
           </Nav.Item>
         </Nav>
         <Nav className="ms-auto">
-        <Nav.Item>
-            { !user && <Nav.Link as={Link} to="/login">
-              Login
-            </Nav.Link> }
-            { user && <Nav.Link as={Link} onClick={handleLogout}>Logout</Nav.Link>}
+          <Nav.Item>
+            {!user && (
+              <Nav.Link as={Link} to="/login">
+                Login
+              </Nav.Link>
+            )}
+            {user && (
+              <Nav.Link as={Link} onClick={handleLogout}>
+                Logout
+              </Nav.Link>
+            )}
           </Nav.Item>
         </Nav>
       </Navb.Collapse>

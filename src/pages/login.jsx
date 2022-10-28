@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Col, Button, Row, Container, Card, Form } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import Axios from "axios";
+import Cookies from "universal-cookie";
 
 //https://frontendshape.com/post/react-bootstrap-5-login-form-example
 
@@ -20,21 +21,15 @@ export default function Login() {
 
   const submitHandler = async (e) => {
     e.preventDefault();
-    Axios.get("http://localhost:5000/account", {
-      params: {
-        params: { email: emailRef, password: passwordRef }
-      },
+    Axios.post("http://localhost:5000/account/login", {
+      email: emailRef,
+      password: passwordRef,
     })
       .then(function (res) {
-        setUser({
-          auth: res.data["authtoken"],
-        });
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            auth: res.data["authtoken"],
-          })
-        );
+        console.log(res.data);
+        const cookies = new Cookies();
+        cookies.set("user", res.data, { path: "/" });
+        navigate("/home");
       })
       .catch(function (error) {
         // error response flow

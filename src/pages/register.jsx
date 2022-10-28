@@ -9,38 +9,30 @@ export default function Register() {
   const [usernameRef, setUsername] = useState();
   const [emailRef, setEmail] = useState();
   const [passwordRef, setPassword] = useState();
-  const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const loggedInUser = localStorage.getItem("user");
     if (loggedInUser) {
-      const foundUser = JSON.parse(loggedInUser);
-      setUser(foundUser);
+      navigate("/home")
     }
   }, []);
 
-  useEffect(() => {
-    if (user) navigate("/home");
-  }, [user]);
-
   const submitHandler = async (e) => {
     e.preventDefault();
-    Axios.post("http://localhost:5000/account", {
+    Axios.post("http://localhost:5000//account/register", {
       name: usernameRef,
       password: passwordRef,
       email: emailRef,
     })
       .then(function (res) {
-        setUser({
-          auth: res.data["authtoken"],
-        });
         localStorage.setItem(
           "user",
           JSON.stringify({
             auth: res.data["authtoken"],
           })
         );
+        navigate("/home")
       })
       .catch(function (error) {
         // error response flow
