@@ -1,4 +1,8 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import { Link, useLocation } from "react-router-dom";
 import Nav from "react-bootstrap/Nav";
 import Navb from "react-bootstrap/Navbar";
@@ -11,26 +15,30 @@ export default function Navbar() {
 
   const getVerification = useCallback(async () => {
     const cookies = new Cookies();
-    let data;
     cookies.get("user");
     if (cookies) {
       Axios.post("http://localhost:5000/account/token", {
         authtoken: cookies["cookies"]["user"],
       }).then(function (result) {
-        setUser(result.data);
+        if (result.data === false) {
+          cookies.remove("user");
+          return setUser(null);
+        }
+        if (user != result.data) setUser(result.data);
       });
     } else {
       setUser(null);
     }
-  }, [location, user]);
+  }, []);
 
   useEffect(() => {
     getVerification();
-  }, [getVerification]);
+  }, [location]);
 
   const handleLogout = () => {
+    const cookies = new Cookies();
+    cookies.remove("user");
     setUser(null);
-    localStorage.clear();
   };
 
   return (

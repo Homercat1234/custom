@@ -1,38 +1,36 @@
 import React, { useState, useEffect } from "react";
 import { Col, Button, Row, Container, Card, Form } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
-import Axios from "axios";
+import Axios from "axios"
+import Cookies from "universal-cookie";
+
 
 //https://frontendshape.com/post/react-bootstrap-5-login-form-example
 
 export default function Register() {
-  const [usernameRef, setUsername] = useState();
-  const [emailRef, setEmail] = useState();
-  const [passwordRef, setPassword] = useState();
+  const [username, setUsername] = useState();
+  const [email, setEmail] = useState();
+  const [password, setPassword] = useState();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const loggedInUser = localStorage.getItem("user");
-    if (loggedInUser) {
+    const loggedInUser = new Cookies();
+    if (loggedInUser.get("user")) {
       navigate("/home")
     }
   }, []);
 
   const submitHandler = async (e) => {
     e.preventDefault();
-    Axios.post("http://localhost:5000//account/register", {
-      name: usernameRef,
-      password: passwordRef,
-      email: emailRef,
+    Axios.post("http://localhost:5000/account/register", {
+      name: username,
+      password: password,
+      email: email,
     })
       .then(function (res) {
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            auth: res.data["authtoken"],
-          })
-        );
-        navigate("/home")
+        const cookies = new Cookies();
+        cookies.set("user", res.data.auth, { path: "/", expires: (new Date(res.data.expires)) });
+        navigate("/home");
       })
       .catch(function (error) {
         // error response flow

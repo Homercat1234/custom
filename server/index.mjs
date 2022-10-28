@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import jwt from "jsonwebtoken";
 import { genSalt, hash, compare } from "bcrypt";
 import cors from "cors";
-import cookieParser from 'cookie-parser';
+import cookieParser from "cookie-parser";
 
 config({ path: join(dirname(fileURLToPath(import.meta.url)), "/.env") });
 
@@ -17,29 +17,30 @@ app.use(cors());
 app.use(cookieParser());
 app.use(express.json());
 
-const generateToken = (uid) => 
+const generateToken = (vars) =>
   new Promise((res, rej) => {
-    if (
-      prisma.users.count({
-        where: {
-          uid: uid,
-        },
-      }) === 0
-    )
-      return rej(new Error("Invalid token"));
-    res(jwt.sign(uid, process.env.JWT_SECRET_KEY));
+    res(jwt.sign(vars, process.env.JWT_SECRET_KEY));
   });
 
-  const verifyToken = (token) => 
+const verifySession = (token) =>
   new Promise((res, rej) => {
     try {
-        var decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-        res(decoded);
-      } catch(err) {
-        res(false);
+      var decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+      if (
+        !(
+          JSON.stringify(["uid", "date", "iat"]) ===
+          JSON.stringify(Object.keys(decoded))
+        )
+      )
+        return res(false);
+      if (new Date(decoded.date) < new Date(Date.now())) {
+        return res(false);
       }
+      res(decoded);
+    } catch (err) {
+      res(false);
+    }
   });
-
 
 app.get("/users", async (req, res) => {
   const posts = await prisma.users.findMany();
@@ -47,29 +48,30 @@ app.get("/users", async (req, res) => {
 });
 
 app.post("/account/token", async (req, res) => {
-    const authtoken = req.body.authtoken;
-    const decoded = await verifyToken(authtoken);
-    res.status(200).json(decoded);
-  });
+  const authtoken = req.body.authtoken;
+  const decoded = await verifySession(authtoken);
+  res.status(200).json(decoded);
+});
 
 app.post("/account/register", async (req, res) => {
-  if (
-    (await prisma.users.count({
-      where: {
-        OR: [
-          {
-            email: req.email,
-            name: req.name,
-          },
-        ],
-      },
-    })) > 0
-  ) {
-    return res.status(400).json({ message: "Invalid username or email" });
-  }
-
   const { name, email } = req.body;
   let password = req.body.password;
+
+  if (name == null || email == null || password == null) return res.status(400);
+
+  const user = await prisma.users.findMany({
+    where: {
+      OR: [
+        {
+          email: email,
+          name: name,
+        },
+      ],
+    },
+  });
+  if (user.length != 0)
+    return res.status(400).json({ message: "Invalid username or email" });
+
   let uid = uuidv4();
 
   while (
@@ -85,7 +87,7 @@ app.post("/account/register", async (req, res) => {
   const salt = await genSalt(10);
   password = await hash(password, salt);
 
-  const post = await prisma.users.create({
+  await prisma.users.create({
     data: {
       uid,
       name,
@@ -93,27 +95,26 @@ app.post("/account/register", async (req, res) => {
       password,
     },
   });
-  let date = Date.now();
+
+  let date = new Date(Date.now());
   date.setMinutes(date.getMinutes() + 1);
-  const authtoken = await generateToken({ uid: uid, date: date, code: process.env.TOKEN_CODE });
-  res
-    .status(200)
-    .cookie('auth').send(authtoken);
+  const authtoken = await generateToken({ uid: uid, date: date });
+  res.status(200).cookie("auth").send({ auth: authtoken, expires: date });
 });
 
 app.post("/account/login", async (req, res) => {
   const body = req.body;
+  if (body == null) return res.status(400);
+  if (body.email == null || body.email == '' || body.password == '' || body.password == null) return res.status(400);
   const user = await prisma.users.findMany({ where: { email: body.email } });
   if (user) {
     // check user password with hashed password stored in the database
     const validPassword = await compare(body.password, user[0].password);
     if (validPassword) {
-        let date = new Date(Date.now());
-        date.setMinutes(date.getMinutes() + 1);
-        const authtoken = await generateToken({ uid: user[0].uid, date: date, code: process.env.TOKEN_CODE });
-        res
-          .status(200)
-          .cookie('auth').send(authtoken);
+      let date = new Date(Date.now());
+      date.setMinutes(date.getMinutes() + 1);
+      const authtoken = await generateToken({ uid: user[0].uid, date: date });
+      res.status(200).cookie("auth").send({ auth: authtoken, expires: date });
     } else {
       res.status(400).json({ error: "Invalid Password" });
     }

@@ -8,27 +8,26 @@ import Cookies from "universal-cookie";
 
 export default function Login() {
   const navigate = useNavigate();
+  const [password, setPassword] = useState();
+  const [email, setEmail] = useState();
 
   useEffect(() => {
-    const loggedInUser = localStorage.getItem("user");
-    if (loggedInUser) {
-      navigate("/home");
+    const loggedInUser = new Cookies();
+    if (loggedInUser.get("user")) {
+      navigate("/home")
     }
   }, []);
-
-  const [passwordRef, setPassword] = useState();
-  const [emailRef, setEmail] = useState();
 
   const submitHandler = async (e) => {
     e.preventDefault();
     Axios.post("http://localhost:5000/account/login", {
-      email: emailRef,
-      password: passwordRef,
+      email: email,
+      password: password,
     })
       .then(function (res) {
-        console.log(res.data);
+        console.log(res.data.expires);
         const cookies = new Cookies();
-        cookies.set("user", res.data, { path: "/" });
+        cookies.set("user", res.data.auth, { path: "/", expires: (new Date(res.data.expires)) });
         navigate("/home");
       })
       .catch(function (error) {
