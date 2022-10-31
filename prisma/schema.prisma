@@ -14,3 +14,11 @@ model users {
   password  String    @db.VarChar(1000)
   createdat DateTime? @default(now()) @db.Timestamp(0)
 }
+
+model posts {
+  id        Int       @id @unique(map: "id") @default(autoincrement())
+  uid       String    @db.VarChar(1000)
+  title     String    @db.VarChar(1000)
+  password  String    @db.VarChar(1000)
+  createdat DateTime? @default(now()) @db.Timestamp(0)
+}

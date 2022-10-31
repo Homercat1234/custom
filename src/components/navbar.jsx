@@ -39,6 +39,7 @@ export default function Navbar() {
     const cookies = new Cookies();
     cookies.remove("user");
     setUser(null);
+    nagivate("location.pathname");
   };
 
   return (

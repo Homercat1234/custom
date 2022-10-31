@@ -50,7 +50,7 @@ app.get("/users", async (req, res) => {
 app.post("/account/token", async (req, res) => {
   const authtoken = req.body.authtoken;
   const decoded = await verifySession(authtoken);
-  res.status(200).json(decoded);
+  res.status(200).json(decoded == false ? false : true);
 });
 
 app.post("/account/register", async (req, res) => {
@@ -97,7 +97,7 @@ app.post("/account/register", async (req, res) => {
   });
 
   let date = new Date(Date.now());
-  date.setMinutes(date.getMinutes() + 1);
+  date.setDate(date.getDate() + 1);
   const authtoken = await generateToken({ uid: uid, date: date });
   res.status(200).cookie("auth").send({ auth: authtoken, expires: date });
 });
@@ -105,14 +105,20 @@ app.post("/account/register", async (req, res) => {
 app.post("/account/login", async (req, res) => {
   const body = req.body;
   if (body == null) return res.status(400);
-  if (body.email == null || body.email == '' || body.password == '' || body.password == null) return res.status(400);
+  if (
+    body.email == null ||
+    body.email == "" ||
+    body.password == "" ||
+    body.password == null
+  )
+    return res.status(400);
   const user = await prisma.users.findMany({ where: { email: body.email } });
   if (user) {
     // check user password with hashed password stored in the database
     const validPassword = await compare(body.password, user[0].password);
     if (validPassword) {
       let date = new Date(Date.now());
-      date.setMinutes(date.getMinutes() + 1);
+      date.setDate(date.getDate() + 1);
       const authtoken = await generateToken({ uid: user[0].uid, date: date });
       res.status(200).cookie("auth").send({ auth: authtoken, expires: date });
     } else {
@@ -131,6 +137,20 @@ app.delete("/user/:uid", async (req, res) => {
     },
   });
   res.json(user);
+});
+
+app.post("/blog", async (req, res) => {
+  const headers = req.headers;
+  if(headers["auth"] == null || headers["auth"] == '')
+    return res.status(400).json({ error: "auth not sent" });
+  if (headers["sec-fetch-site"] == null || headers["sec-fetch-site"] == "")
+    return res.status(400).json({ error: "couldn't verify request" });
+  if (!(headers["sec-fetch-site"] === "same-site"))
+    return res.status(400).json({ error: "cross-site detected" });
+  const decoded = await verifySession(headers["auth"]);
+  if(decoded == false)
+    return res.status(400).json({ error: "invalid auth" });
+    res.status(200).json({ message: "verifed" });
 });
 
 const PORT = process.env.PORT || 5000;

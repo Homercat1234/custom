@@ -1,5 +1,6 @@
 import React from "react";
+import Posts from "../components/posts";
 
 export default function Blog () {
-    return (<div>Blog</div>);
+    return (<div><Posts /></div>);
 }
